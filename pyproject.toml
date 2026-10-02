@@ -1,0 +1,27 @@
+[project]
+name = "k8s-python"
+version = "0.1.0"
+description = "Add your description here"
+# readme = "README.md"
+authors = [
+    { name = "Ehtsham.nanobytes", email = "ehtsham.khaliq.nbt@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "email-validator>=2.3.0",
+    "faker>=40.40.0",
+    "fastapi[standard]>=0.142.2",
+    "sqlalchemy[asyncio]>=2.1.1",
+]
+
+[project.scripts]
+k8s-python = "main:app"
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "src"
+module-root = ""

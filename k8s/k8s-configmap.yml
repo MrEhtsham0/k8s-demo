@@ -1,0 +1,14 @@
+# ConfigMap: non-secret config as key/value pairs.
+# Pods read these as env vars (or files). Change config without rebuilding the image.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-python-config
+  labels:
+    app: k8s-python
+data:
+  # Shown by GET /health
+  APP_ENV: "development"
+  APP_VERSION: "1.0.0"
+  # Python: flush logs immediately (useful in containers)
+  PYTHONUNBUFFERED: "1"

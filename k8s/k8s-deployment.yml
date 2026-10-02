@@ -1,0 +1,76 @@
+# Deployment: tells Kubernetes how to run your app containers (pods).
+# It keeps N replicas running and restarts them if they crash.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-python
+  labels:
+    app: k8s-python
+spec:
+  # Starting replica count. After HPA is applied, HPA owns scaling (min/max in k8s-hpa.yml).
+  replicas: 1
+
+  # Used by the Deployment to find its pods
+  selector:
+    matchLabels:
+      app: k8s-python
+
+  template:
+    metadata:
+      labels:
+        app: k8s-python
+    spec:
+      # Runs before the app container — waits until Postgres Service is reachable
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z postgres 5432; do
+                echo "waiting for postgres..."
+                sleep 2
+              done
+              echo "postgres is up"
+      containers:
+        - name: k8s-python
+          # Replace with your real image after: docker build -t k8s-python:latest .
+          # For local clusters (minikube/kind), load/push the image first.
+          image: k8s-python:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            # Must match EXPOSE / uvicorn port in Dockerfile
+            - containerPort: 8000
+          # Non-secret config from ConfigMap (APP_ENV, APP_VERSION, PYTHONUNBUFFERED)
+          envFrom:
+            - configMapRef:
+                name: k8s-python-config
+          env:
+            # Same Secret as Postgres — host is the Service name "postgres"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: DATABASE_URL
+          # Scheduler uses requests; limits cap what the container can use.
+          # HPA CPU % is based on requests (e.g. 70% of 100m = 70m).
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20

@@ -1,0 +1,16 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Local Kubernetes secrets (use k8s/k8s-secret.yml.example as the template)
+k8s/k8s-secret.yml
+
+# Helm local secret overrides (use values-secret.yaml.example as the template)
+charts/k8s-python/values-secret.yaml

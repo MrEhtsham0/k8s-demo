@@ -1,0 +1,7 @@
+# Step 1: Chart metadata (like package.json for Helm)
+apiVersion: v2
+name: k8s-python
+description: Learning Helm chart for the FastAPI + Postgres app
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
