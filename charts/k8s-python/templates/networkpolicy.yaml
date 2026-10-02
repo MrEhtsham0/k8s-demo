@@ -1,0 +1,24 @@
+{{- if and .Values.postgres.enabled .Values.networkPolicy.enabled }}
+# Only the app pods may connect to Postgres on 5432.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.postgres.name }}-allow-app-only
+  labels:
+    app: {{ .Values.postgres.name }}
+    {{- include "k8s-python.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Values.postgres.name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "k8s-python.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 5432
+{{- end }}

@@ -18,6 +18,7 @@ service:
 
 ingress:
   enabled: true
+  className: nginx
   host: k8s-python.local
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
@@ -39,7 +40,8 @@ autoscaling:
   enabled: true
   minReplicas: 1
   maxReplicas: 5
-  targetCPUUtilizationPercentage: 5
+  # Use 70 for normal demos; temporarily set 5 only to practice scaling
+  targetCPUUtilizationPercentage: 70
 
 postgres:
   enabled: true
@@ -51,6 +53,11 @@ postgres:
   user: app
   password: app
   database: appdb
+
+networkPolicy:
+  # Only pods with app=k8s-python may reach Postgres:5432
+  # Needs a CNI that enforces NetworkPolicy (may be a no-op on some kind setups)
+  enabled: true
 
 cronjob:
   enabled: true

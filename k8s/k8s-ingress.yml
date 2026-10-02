@@ -11,8 +11,7 @@ metadata:
     # Example for nginx ingress controller; remove/change if you use another
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  # Uncomment and set if your cluster requires an ingress class name
-  # ingressClassName: nginx
+  ingressClassName: nginx
   rules:
     - host: k8s-python.local
       http:

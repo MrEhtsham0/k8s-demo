@@ -1,18 +1,20 @@
 1. Chart installed: {{ .Release.Name }}
 2. App service: {{ include "k8s-python.fullname" . }}
-3. Port-forward:
+3. Ingress host: {{ .Values.ingress.host }} (class={{ .Values.ingress.className }})
+   See docs/INGRESS.md for nginx install + hosts file + kind port 80.
+4. Port-forward (fallback if Ingress port 80 not mapped):
    kubectl port-forward service/{{ include "k8s-python.fullname" . }} 8000:{{ .Values.service.port }}
-4. Then:
+5. Then:
    curl http://localhost:8000/health
-   curl http://localhost:8000/users
+   curl http://{{ .Values.ingress.host }}/health
 {{- if .Values.cronjob.enabled }}
 
-5. CronJob (every schedule={{ .Values.cronjob.schedule }}):
+6. CronJob (every schedule={{ .Values.cronjob.schedule }}):
    kubectl create job --from=cronjob/count-to-100 count-to-100-manual
    kubectl logs job/count-to-100-manual
 {{- end }}
 
-6. Useful Helm commands:
+7. Useful Helm commands:
    helm status {{ .Release.Name }}
    helm get values {{ .Release.Name }}
    helm upgrade {{ .Release.Name }} ./charts/k8s-python
