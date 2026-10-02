@@ -1,0 +1,27 @@
+# HPA: scales Deployment replicas based on CPU usage.
+# Needs metrics-server in the cluster (kind often needs it installed separately).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: k8s-python
+  labels:
+    app: k8s-python
+spec:
+  # Which Deployment to scale
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: k8s-python
+
+  # Keep between 1 and 5 pods
+  minReplicas: 1
+  maxReplicas: 5
+
+  metrics:
+    # Scale up when average CPU across pods is above 70% of the request
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

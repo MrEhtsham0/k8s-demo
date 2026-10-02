@@ -1,0 +1,28 @@
+# Ingress: HTTP entry from outside the cluster into your Service.
+# Needs an Ingress Controller installed (e.g. nginx, traefik).
+# Without a controller, this object does nothing.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: k8s-python
+  labels:
+    app: k8s-python
+  annotations:
+    # Example for nginx ingress controller; remove/change if you use another
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  # Uncomment and set if your cluster requires an ingress class name
+  # ingressClassName: nginx
+  rules:
+    - host: k8s-python.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                # Must match metadata.name in k8s-service.yml
+                name: k8s-python
+                port:
+                  # Must match the Service "port" (not targetPort)
+                  number: 80

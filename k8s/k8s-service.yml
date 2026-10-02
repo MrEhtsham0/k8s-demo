@@ -1,0 +1,23 @@
+# Service: stable network endpoint in front of your Deployment pods.
+# Other pods (or Ingress) talk to this Service, not to pods directly
+# (pod IPs change when pods restart).
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-python
+  labels:
+    app: k8s-python
+spec:
+  # ClusterIP = reachable only inside the cluster (typical with Ingress)
+  # Change to NodePort or LoadBalancer if you want direct external access
+  type: ClusterIP
+  selector:
+    # Must match the pod labels in the Deployment
+    app: k8s-python
+  ports:
+    - name: http
+      protocol: TCP
+      # Port clients use to reach the Service
+      port: 80
+      # Port on the container (uvicorn)
+      targetPort: 8000

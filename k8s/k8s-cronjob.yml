@@ -1,0 +1,57 @@
+# CronJob: runs every 5 minutes and prints 1..100.
+# Apply with: kubectl apply -f k8s/k8s-cronjob.yml
+---
+# Script mounted into the Job pod (avoids Windows CRLF issues from host files)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: count-to-100-script
+  labels:
+    app: count-to-100
+data:
+  count_to_100.sh: |
+    #!/bin/sh
+    # Prints numbers 1 through 100
+    i=1
+    while [ "$i" -le 100 ]; do
+      echo "$i"
+      i=$((i + 1))
+    done
+    echo "done counting to 100"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: count-to-100
+  labels:
+    app: count-to-100
+spec:
+  # minute hour day-of-month month day-of-week (UTC)
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      labels:
+        app: count-to-100
+    spec:
+      template:
+        metadata:
+          labels:
+            app: count-to-100
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: counter
+              image: busybox:1.36
+              command: ["sh", "/scripts/count_to_100.sh"]
+              volumeMounts:
+                - name: count-script
+                  mountPath: /scripts
+                  readOnly: true
+          volumes:
+            - name: count-script
+              configMap:
+                name: count-to-100-script
+                defaultMode: 0755
