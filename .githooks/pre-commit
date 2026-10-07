@@ -1,41 +1,38 @@
 #!/usr/bin/env bash
-# Refuse commit when project checks fail.
-# Enable once: git config core.hooksPath .githooks
+# pre-commit: lint, format, secret scan, helm lint before a commit is created.
+# Enable: run ./.githooks/install (or ./src/scripts/bootstrap.sh)
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)"
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${HOOK_DIR}/_lib.sh"
 
-if command -v uv >/dev/null 2>&1; then
-  UV=(uv run --frozen)
-elif command -v powershell.exe >/dev/null 2>&1; then
-  # Git Bash on Windows sometimes misses uv on PATH
-  run_ps() {
-    powershell.exe -NoProfile -Command "$1"
-  }
-else
-  echo "uv not found. Install it from https://docs.astral.sh/uv/" >&2
-  exit 1
+echo "==> Secret scan (staged files)"
+# Lightweight guard â€” not a replacement for CI secret scanners (gitleaks, etc.).
+STAGED="$(git diff --cached --name-only --diff-filter=ACM || true)"
+if [[ -n "$STAGED" ]]; then
+  # Private keys / AWS-style access keys in staged content
+  if git diff --cached -U0 | grep -Eiq \
+    'BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY|AKIA[0-9A-Z]{16}|aws_secret_access_key[[:space:]]*=[[:space:]]*[^[:space:]]+'; then
+    echo "ERROR: Possible secret detected in staged changes. Remove it before committing." >&2
+    exit 1
+  fi
+  # Block committing real secret manifests (keep *.example)
+  while IFS= read -r f; do
+    case "$f" in
+      *secret*.yml|*secret*.yaml|*values-secret.yaml)
+        if [[ "$f" != *.example ]]; then
+          echo "ERROR: Refusing to commit secret file: $f" >&2
+          echo "Use a *.example template and keep real secrets gitignored." >&2
+          exit 1
+        fi
+        ;;
+    esac
+  done <<<"$STAGED"
 fi
+echo "OK: no obvious secrets in staged changes"
 
-echo "==> Python lint (ruff check)"
-if [[ -n "${UV+x}" ]]; then
-  "${UV[@]}" ruff check .
-else
-  run_ps '& uv run --frozen ruff check .'
-fi
-
-echo "==> Python format (ruff format --check)"
-if [[ -n "${UV+x}" ]]; then
-  "${UV[@]}" ruff format . --check
-else
-  run_ps '& uv run --frozen ruff format . --check'
-fi
-
-if command -v helm >/dev/null 2>&1; then
-  echo "==> Helm lint (charts/k8s-python)"
-  helm lint charts/k8s-python
-else
-  echo "==> Helm lint skipped (helm not on PATH)"
-fi
+run_python_quality
+run_helm_lint
 
 echo "OK: pre-commit checks passed"

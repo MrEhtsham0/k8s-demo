@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# post-checkout: sync deps when switching branches if lockfile/pyproject differ.
+# Args from Git: $1=prev HEAD  $2=new HEAD  $3=1 if branch checkout, 0 if file
+# Enable: run ./.githooks/install (or ./src/scripts/bootstrap.sh)
+set -euo pipefail
+
+PREV_HEAD="${1:-}"
+NEW_HEAD="${2:-}"
+BRANCH_CHECKOUT="${3:-0}"
+
+# Only act on branch checkouts (not `git checkout -- file`)
+if [[ "$BRANCH_CHECKOUT" != "1" ]]; then
+  exit 0
+fi
+
+# First clone / empty prev â€” nothing to compare
+if [[ -z "$PREV_HEAD" || "$PREV_HEAD" == "$NEW_HEAD" ]]; then
+  exit 0
+fi
+
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${HOOK_DIR}/_lib.sh"
+
+if deps_may_have_changed "$PREV_HEAD" "$NEW_HEAD"; then
+  echo "==> Branch deps differ â€” running uv sync --frozen"
+  run_uv_sync
+  echo "OK: virtualenv synced for this branch"
+fi

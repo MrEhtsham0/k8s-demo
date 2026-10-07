@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# post-commit: lightweight confirmation after a successful commit (never fails the commit).
+# Enable: run ./.githooks/install (or ./src/scripts/bootstrap.sh)
+set -euo pipefail
+
+HASH="$(git rev-parse --short HEAD 2>/dev/null || true)"
+SUBJ="$(git log -1 --pretty=%s 2>/dev/null || true)"
+echo "OK: committed ${HASH} â€” ${SUBJ}"
+exit 0

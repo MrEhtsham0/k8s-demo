@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# prepare-commit-msg: help draft messages; never rewrite merge/squash bodies.
+# Args: $1=path to message file  $2=source (message|template|merge|squash|commit)
+# Enable: run ./.githooks/install (or ./src/scripts/bootstrap.sh)
+set -euo pipefail
+
+MSG_FILE="${1:?}"
+SOURCE="${2:-}"
+
+# Leave Git-generated merge / squash / -c / -C messages alone.
+case "$SOURCE" in
+  merge|squash|commit) exit 0 ;;
+esac
+
+# If the user already typed a message (-m), do not append noise.
+FIRST="$(sed -e '/^#/d' -e '/^[[:space:]]*$/d' "$MSG_FILE" | head -n 1 || true)"
+if [[ -n "$FIRST" ]]; then
+  exit 0
+fi
+
+BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null || true)"
+# Skip detached HEAD / special branches
+if [[ -z "$BRANCH" || "$BRANCH" == "main" || "$BRANCH" == "master" ]]; then
+  HINT="feat: "
+else
+  # Strip common prefixes: feature/foo -> foo, fix/bar -> bar
+  SHORT="${BRANCH#feature/}"
+  SHORT="${SHORT#feat/}"
+  SHORT="${SHORT#fix/}"
+  SHORT="${SHORT#chore/}"
+  SHORT="${SHORT#docs/}"
+  HINT="chore(${SHORT}): "
+fi
+
+# Prepend a Conventional Commits hint as the first editable line.
+{
+  echo "${HINT}"
+  echo ""
+  echo "# Conventional Commits: <type>(scope): summary"
+  echo "# Types: feat fix docs style refactor perf test build ci chore revert"
+  cat "$MSG_FILE"
+} >"${MSG_FILE}.tmp"
+mv "${MSG_FILE}.tmp" "$MSG_FILE"

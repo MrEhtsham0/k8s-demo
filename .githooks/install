@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Enable this repo's Git hooks for the current clone (local config only).
+# Safe to re-run. Teammates: run once after clone, or use src/scripts/bootstrap.sh
+#
+#   ./.githooks/install
+#   # Windows PowerShell:  .\.githooks\install.ps1
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "ERROR: not inside a git repository." >&2
+  exit 1
+fi
+
+git config --local core.hooksPath .githooks
+CURRENT="$(git config --local --get core.hooksPath)"
+
+echo "OK: core.hooksPath → ${CURRENT}"
+echo "    Hooks are active for this clone only (not pushed via git; each clone runs install once)."
+echo "    Tip: new teammates can run: ./src/scripts/bootstrap.sh"

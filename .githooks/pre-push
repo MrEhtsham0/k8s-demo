@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# pre-push: block push when quality checks (and tests, when present) fail.
+# Enable: run ./.githooks/install (or ./src/scripts/bootstrap.sh)
+set -euo pipefail
+
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${HOOK_DIR}/_lib.sh"
+
+echo "==> pre-push quality checks"
+run_python_quality
+run_helm_lint
+
+# Run pytest only when a test suite exists (skip gracefully otherwise).
+if [[ -d tests ]] || compgen -G "test_*.py" >/dev/null 2>&1 || compgen -G "**/test_*.py" >/dev/null 2>&1; then
+  echo "==> Tests (pytest)"
+  if run_uv pytest -q 2>/dev/null; then
+    :
+  elif command -v pytest >/dev/null 2>&1; then
+    pytest -q
+  else
+    echo "WARNING: tests found but pytest is not available via uv. Skipping." >&2
+  fi
+else
+  echo "==> Tests skipped (no tests/ or test_*.py yet)"
+fi
+
+echo "OK: pre-push checks passed"

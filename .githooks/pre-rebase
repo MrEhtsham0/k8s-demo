@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# pre-rebase: refuse rebase with a dirty worktree (avoids messy partial rebases).
+# Enable: run ./.githooks/install (or ./src/scripts/bootstrap.sh)
+set -euo pipefail
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "ERROR: uncommitted changes present. Commit or stash before rebasing." >&2
+  exit 1
+fi
+
+echo "OK: worktree clean â€” rebase may continue"
+exit 0

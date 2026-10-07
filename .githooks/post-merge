@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# post-merge: sync deps after pull/merge when lockfile or pyproject changed.
+# Enable: run ./.githooks/install (or ./src/scripts/bootstrap.sh)
+set -euo pipefail
+
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${HOOK_DIR}/_lib.sh"
+
+if deps_may_have_changed "HEAD@{1}" "HEAD"; then
+  echo "==> Dependencies changed â€” running uv sync --frozen"
+  run_uv_sync
+  echo "OK: virtualenv synced"
+else
+  echo "==> post-merge: no dependency file changes (skip uv sync)"
+fi

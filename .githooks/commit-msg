@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# commit-msg: keep commit history consistent (Conventional Commits).
+# Enable: run ./.githooks/install (or ./src/scripts/bootstrap.sh)
+#
+# Examples:
+#   feat: add custom health endpoint
+#   fix(api): handle missing database url
+#   docs: explain ingress on kind
+#   chore(hooks): add pre-push tests
+set -euo pipefail
+
+MSG_FILE="${1:?commit-msg hook requires path to commit message file}"
+MSG="$(sed -e '/^#/d' -e '/^[[:space:]]*$/d' "$MSG_FILE" | head -n 1 || true)"
+
+if [[ -z "${MSG}" ]]; then
+  echo "ERROR: empty commit message." >&2
+  exit 1
+fi
+
+# Allow merges, reverts, and fixup/squash helpers from git rebase -i
+if [[ "$MSG" =~ ^Merge\  ]] \
+  || [[ "$MSG" =~ ^Revert\  ]] \
+  || [[ "$MSG" =~ ^fixup! ]] \
+  || [[ "$MSG" =~ ^squash! ]]; then
+  exit 0
+fi
+
+# Conventional Commits: type(optional-scope)!: subject
+PATTERN='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._/-]+\))?(!)?:[[:space:]]+.+'
+
+if [[ ! "$MSG" =~ $PATTERN ]]; then
+  cat >&2 <<'EOF'
+ERROR: commit message must follow Conventional Commits.
+
+  <type>(optional-scope): <short summary>
+
+Types: feat fix docs style refactor perf test build ci chore revert
+
+Examples:
+  feat: add network policy for postgres
+  fix(helm): set ingress class to nginx
+  docs: add argo cd gitops guide
+  chore(hooks): add commit-msg validation
+EOF
+  exit 1
+fi
+
+SUBJECT="${MSG#*: }"
+SUBJECT="${SUBJECT# }"
+if [[ ${#SUBJECT} -lt 3 ]]; then
+  echo "ERROR: commit subject is too short." >&2
+  exit 1
+fi
+
+# Soft length hint (subject only, after type:)
+if [[ ${#MSG} -gt 100 ]]; then
+  echo "WARNING: first line is ${#MSG} chars (prefer <= 72â€“100)." >&2
+fi
+
+exit 0
