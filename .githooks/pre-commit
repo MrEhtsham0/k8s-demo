@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Refuse commit when project checks fail.
+# Enable once: git config core.hooksPath .githooks
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+if command -v uv >/dev/null 2>&1; then
+  UV=(uv run --frozen)
+elif command -v powershell.exe >/dev/null 2>&1; then
+  # Git Bash on Windows sometimes misses uv on PATH
+  run_ps() {
+    powershell.exe -NoProfile -Command "$1"
+  }
+else
+  echo "uv not found. Install it from https://docs.astral.sh/uv/" >&2
+  exit 1
+fi
+
+echo "==> Python lint (ruff check)"
+if [[ -n "${UV+x}" ]]; then
+  "${UV[@]}" ruff check .
+else
+  run_ps '& uv run --frozen ruff check .'
+fi
+
+echo "==> Python format (ruff format --check)"
+if [[ -n "${UV+x}" ]]; then
+  "${UV[@]}" ruff format . --check
+else
+  run_ps '& uv run --frozen ruff format . --check'
+fi
+
+if command -v helm >/dev/null 2>&1; then
+  echo "==> Helm lint (charts/k8s-python)"
+  helm lint charts/k8s-python
+else
+  echo "==> Helm lint skipped (helm not on PATH)"
+fi
+
+echo "OK: pre-commit checks passed"

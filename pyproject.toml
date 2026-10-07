@@ -25,3 +25,110 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 module-name = "src"
 module-root = ""
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.10",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff: lint + format (https://docs.astral.sh/ruff/)
+# Run:
+#   uv run ruff check .
+#   uv run ruff check . --fix
+#   uv run ruff format .
+#   uv run ruff format . --check
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+src = ["src", "."]
+exclude = [
+    ".venv",
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "charts",
+    "k8s",
+    "docs",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "UP",     # pyupgrade
+    "SIM",    # flake8-simplify
+    "C4",     # flake8-comprehensions
+    "N",      # pep8-naming
+    "S",      # flake8-bandit (security)
+    "A",      # flake8-builtins
+    "ASYNC",  # flake8-async
+    "T20",    # flake8-print
+    "PTH",    # flake8-use-pathlib
+    "RUF",    # ruff-specific
+    "PERF",   # perflint
+    "PIE",    # flake8-pie
+    "ERA",    # eradicate (commented-out code)
+    "PL",     # pylint subset
+    "RET",    # flake8-return
+    "ARG",    # flake8-unused-arguments
+    "DTZ",    # flake8-datetimez
+    "FA",     # flake8-future-annotations
+    "ISC",    # flake8-implicit-str-concat
+    "ICN",    # flake8-import-conventions
+    "G",      # flake8-logging-format
+    "INP",    # flake8-no-pep420
+    "Q",      # flake8-quotes
+    "SLOT",   # flake8-slots
+    "TID",    # flake8-tidy-imports
+    "TC",     # flake8-type-checking
+    "YTT",    # flake8-2020
+]
+ignore = [
+    "E501",    # line length handled by formatter
+    "PLR0913", # too many arguments (FastAPI endpoints often have several deps)
+    "PLR2004", # magic values — noisy for small apps
+    "S104",    # binding 0.0.0.0 is normal for containers
+    # TC moves imports behind TYPE_CHECKING; awkward with FastAPI/SQLAlchemy/Pydantic
+    "TC001",
+    "TC002",
+    "TC003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Seed / demo passwords and scripts
+"src/db/seed.py" = ["S105", "S106", "T201"]
+"src/models/**" = ["S105", "S106"]
+"src/scripts/**" = ["T201", "INP001"]
+"main.py" = ["INP001"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+combine-as-imports = true
+force-sort-within-sections = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+# FastAPI uses Depends()/Query() in defaults; that is intentional, not a B008 bug.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.params.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Header",
+]
